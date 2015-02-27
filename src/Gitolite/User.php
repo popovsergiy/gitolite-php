@@ -23,15 +23,26 @@ namespace Gitolite;
 class User
 {
     protected $username = null;
+
     protected $email = null;
+
     protected $keys = array();
+
+	/**
+	 * Pools of key. If key save in root directory then relative pool name will be empty
+	 * Example: work, home, etc.
+	 *
+	 * @see http://gitolite.com/gitolite/gitolite.html#multi-key
+	 * @var array
+	 */
+	protected $keyPools = array();
 
     /**
      * Set Username
      *
      * @param string $username The user name
      *
-     * @return Gitolite\User
+     * @return User
      */
     public function setUsername($username)
     {
@@ -54,7 +65,7 @@ class User
      *
      * @param array $keys An array of keys
      *
-     * @return Gitolite\User
+     * @return User
      */
     public function setKeys(array $keys)
     {
@@ -68,7 +79,7 @@ class User
     /**
      * Get Keys
      *
-     * @return string
+     * @return array
      */
     public function getKeys()
     {
@@ -90,11 +101,61 @@ class User
      *
      * @param string $key A key
      *
-     * @return Gitolite\User
+     * @return User
      */
     public function addKey($key)
     {
         $this->keys[] = (string) $key;
+        return $this;
+    }
+
+	/**
+	 * Set Key paths
+	 *
+	 * @param array $keyPools An array of key paths
+	 *
+	 * @return User
+	 */
+	public function setKeyPools(array $keyPools)
+	{
+		$this->keyPools = array();
+		foreach ($keyPools as $keyPool) {
+			$this->addKeyPool($keyPool);
+		}
+		return $this;
+	}
+
+	/**
+	 * Get Key paths
+	 *
+	 * @return array
+	 */
+	public function getKeyPools()
+	{
+		return $this->keyPools;
+	}
+
+	/**
+	 * Get First Key
+	 *
+	 * @param string $index
+	 * @return string|bool
+	 */
+	public function getKeyPool($index)
+	{
+		return (string) isset($this->keyPools[$index]) ? $this->keyPools[$index] : false;
+	}
+
+    /**
+     * Add key path
+     *
+     * @param string $keyPath A key path
+     *
+     * @return User
+     */
+    public function addKeyPool($keyPath)
+    {
+        $this->keyPools[] = (string) $keyPath;
         return $this;
     }
 
@@ -103,7 +164,7 @@ class User
      *
      * @param string $email An email
      *
-     * @return Gitolite\User
+     * @return User
      */
     public function setEmail($email)
     {

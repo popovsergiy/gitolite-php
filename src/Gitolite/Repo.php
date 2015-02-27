@@ -30,7 +30,7 @@ class Repo
      *
      * @param string $name The repository name
      *
-     * @return Gitolite\Team
+     * @return Repo
      */
     public function setName($name)
     {
@@ -53,7 +53,7 @@ class Repo
      *
      * @param array $acls An array of acl objects
      *
-     * @return Gitolite\Team
+     * @return Repo
      */
     public function setAcls(array $acls)
     {
@@ -64,7 +64,7 @@ class Repo
     /**
      * Get Acls
      *
-     * @return array of Acls
+     * @return Acl[]
      */
     public function getAcls()
     {
@@ -76,7 +76,7 @@ class Repo
      *
      * @param Acl $acl An acl object
      *
-     * @return Gitolite\Team
+     * @return Repo
      */
     public function addAcl(Acl $acl)
     {

@@ -31,7 +31,7 @@ class Team
      *
      * @param string $name The team name
      *
-     * @return Gitolite\Team
+     * @return Team
      */
     public function setName($name)
     {
@@ -64,7 +64,7 @@ class Team
      *
      * @param array $users An array of user objects
      *
-     * @return Gitolite\Team
+     * @return Team
      */
     public function setUsers(array $users)
     {
@@ -90,7 +90,7 @@ class Team
      *
      * @param User $user An user object
      *
-     * @return Gitolite\Team
+     * @return Team
      */
     public function addUser(User $user)
     {
@@ -103,7 +103,7 @@ class Team
      *
      * @param array $teams An array of team objects
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function setTeams(array $teams)
     {
@@ -129,7 +129,6 @@ class Team
      *
      * @param Team $team A team object
      *
-     * @return Gitolite\Acl
      */
     public function addTeam(Team $team)
     {

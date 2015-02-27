@@ -23,7 +23,7 @@ namespace Gitolite;
 class Acl
 {
     private $allowedPermissions = array(
-        'R', 'RW', 'RW+', '-', 'RWC', 'RW+C', 'RWD', 'RW+D', 'RWCD', 'RW+CD', 'RWDC', 'RW+DC',
+		'-', 'R', 'RW', 'RW+', 'RWC', 'RW+C', 'RWD', 'RW+D', 'RWCD', 'RW+CD', 'RWDC', 'RW+DC',
     );
     protected $permission = null;
     protected $refexes = '';
@@ -37,7 +37,7 @@ class Acl
      *
      * @param string $permission A permission
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function setPermission($permission)
     {
@@ -48,6 +48,10 @@ class Acl
         $this->permission = $permission;
         return $this;
     }
+
+	public function getAllowedPermissions() {
+		return $this->allowedPermissions;
+	}
 
     /**
      * Get Permission
@@ -64,7 +68,7 @@ class Acl
      *
      * @param string $refexes A refex
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function setRefexes($refexes)
     {
@@ -88,7 +92,7 @@ class Acl
      *
      * @param array $users An array of user objects
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function setUsers(array $users)
     {
@@ -114,7 +118,7 @@ class Acl
      *
      * @param User $user A user object
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function addUser(User $user)
     {
@@ -127,7 +131,7 @@ class Acl
      *
      * @param array $teams An array of team objects
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function setTeams(array $teams)
     {
@@ -153,7 +157,7 @@ class Acl
      *
      * @param Team $team A team object
      *
-     * @return Gitolite\Acl
+     * @return Acl
      */
     public function addTeam(Team $team)
     {

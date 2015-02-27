@@ -33,8 +33,8 @@ class Gitolite
     protected $gitoliteRepository = null;
 
     protected $users = array();
-    protected $teams = array();
-    protected $repos = array();
+	protected $teams = array(/*'all' => []*/);
+	protected $repos = array();
 
     protected $log = array();
 
@@ -48,7 +48,7 @@ class Gitolite
      *
      * @param string $gitRemoteRepositoryURL The remote repository URL
      *
-     * @return Gitolite\Gitolite
+     * @return Gitolite
      */
     public function setGitRemoteRepositoryURL($gitRemoteRepositoryURL)
     {
@@ -71,7 +71,7 @@ class Gitolite
      *
      * @param string $gitLocalRepositoryPath The git local repository Path
      *
-     * @return Gitolite\Gitolite
+     * @return Gitolite
      */
     public function setGitLocalRepositoryPath($gitLocalRepositoryPath)
     {
@@ -94,7 +94,7 @@ class Gitolite
      *
      * @param string $gitEmail The git user email
      *
-     * @return Gitolite\Gitolite
+     * @return Gitolite
      */
     public function setGitEmail($gitEmail)
     {
@@ -117,7 +117,7 @@ class Gitolite
      *
      * @param string $gitUsername The git user name
      *
-     * @return Gitolite\User
+     * @return User
      */
     public function setGitUsername($gitUsername)
     {
@@ -138,9 +138,9 @@ class Gitolite
     /**
      * Set GitServername
      *
-     * @param string $gitServername The git server name
+     * @param string $gitServerName The git server name
      *
-     * @return Gitolite\Gitolite
+     * @return Gitolite
      */
     public function setGitServerName($gitServerName)
     {
@@ -163,7 +163,7 @@ class Gitolite
      *
      * @param array $repos An array of repositories
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function setRepos(array $repos)
     {
@@ -174,7 +174,7 @@ class Gitolite
     /**
      * Get Repos
      *
-     * @return array of Repos
+     * @return Repo[]
      */
     public function getRepos()
     {
@@ -196,9 +196,9 @@ class Gitolite
     /**
      * Add repo
      *
-     * @param string $repo A repository object
+     * @param Repo $repo A repository object
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function addRepo(Repo $repo)
     {
@@ -223,7 +223,7 @@ class Gitolite
      *
      * @param array $users An array of user objects
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function setUsers(array $users)
     {
@@ -237,7 +237,7 @@ class Gitolite
     /**
      * Get Users
      *
-     * @return array of Users
+     * @return User[]
      */
     public function getUsers()
     {
@@ -259,9 +259,9 @@ class Gitolite
     /**
      * Add user
      *
-     * @param string $user A user object
+     * @param User $user A user object
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function addUser(User $user)
     {
@@ -275,7 +275,7 @@ class Gitolite
      *
      * @param array $teams An array of team objects
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function setTeams(array $teams)
     {
@@ -289,7 +289,7 @@ class Gitolite
     /**
      * Get Teams
      *
-     * @return array of Teams
+     * @return Team[]
      */
     public function getTeams()
     {
@@ -313,22 +313,32 @@ class Gitolite
      *
      * @param string $team A team object
      *
-     * @return Gitolite\Acl
+     * @return Gitolite
      */
     public function addTeam(Team $team)
     {
     	$name = $team->getName();
         $this->teams[$name] = $team;
+
         return $this;
     }
     
     /**
      * Import gitolite.conf
      *
+	 * @todo Fix problem with the special groups (example: @all)
+	 * @link http://gitolite.com/gitolite/g2/bac.html#groups
      */	
 	public function import()
 	{
-		
+		$prepareKeyPool = function($path) {
+			$normalizedPath = str_replace('\\', '/', $path);
+			$relativePath = str_replace($this->getGitLocalRepositoryPath(), '', $normalizedPath);
+			$prepared = pathinfo(trim($relativePath, '/'), PATHINFO_DIRNAME);
+
+			return $prepared;
+		};
+
 		$file = file($this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_CONF_DIR . DIRECTORY_SEPARATOR . self::GITOLITE_CONF_FILE);
 		
 		foreach($file as $line)
@@ -347,6 +357,7 @@ class Gitolite
 				$team->setName($team_name);
 				
 				$usr = preg_split("/[\s\t]+/", trim($line_split[1]));
+
 				foreach($usr as $u)
 				{
 					// is team
@@ -367,8 +378,13 @@ class Gitolite
 						{
 							$user = new User();
 							$user->setUsername($u);
-							$key = $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_KEY_DIR . DIRECTORY_SEPARATOR . $user->renderKeyFileName();
-							if(file_exists($key)) $user->addKey(file_get_contents($key));
+
+							// @link http://gitolite.com/gitolite/gitolite.html#multi-key
+							$keys = $this->getUserKeys($u);
+							foreach ($keys as $path => $key) {
+								//if(file_exists($path))
+								$user->addKeyPool($prepareKeyPool($path))->addKey(file_get_contents($path));
+							}
 							$this->users[$u] = $user;
 							$team->addUser($user);
 						}						
@@ -420,8 +436,13 @@ class Gitolite
 						{
 							$this->users[$u] = new User();
 							$this->users[$u]->setUsername($u);
-							$key = $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_KEY_DIR . DIRECTORY_SEPARATOR . $this->users[$u]->renderKeyFileName();
-							if(file_exists($key)) $this->users[$u]->addKey(file_get_contents($key));
+
+							// @link http://gitolite.com/gitolite/gitolite.html#multi-key
+							$keys = $this->getUserKeys($u);
+							foreach ($keys as $path => $key) {
+								//if(file_exists($path))
+								$this->users[$u]->addKeyPool($prepareKeyPool($path))->addKey(file_get_contents($path));
+							}
 						}
 						
 						$acl->addUser($this->users[$u]);
@@ -432,6 +453,20 @@ class Gitolite
 				$this->repos[$repo->getName()] = $repo;
 			}
 		}
+	}
+
+	/**
+	 * @todo Write comment of method
+	 * @param $u
+	 * @return
+	 */
+	protected function getUserKeys($u) {
+		$pattern = "/{$u}.*\.pub$/i";
+		$directory = new \RecursiveDirectoryIterator($this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_KEY_DIR, \RecursiveDirectoryIterator::SKIP_DOTS);
+		$iterator = new \RecursiveIteratorIterator($directory, \RecursiveIteratorIterator::SELF_FIRST, \RecursiveIteratorIterator::CATCH_GET_CHILD); // Ignore "Permission denied"
+		$keys = new \RegexIterator($iterator, $pattern, \RecursiveRegexIterator::GET_MATCH);
+
+		return $keys;
 	}
 
     /**
@@ -474,8 +509,9 @@ class Gitolite
      */
     protected function writeFile($filename, $data, $checkChange=true)
     {
-        if (!file_exists($filename)) {
-            if (!file_put_contents($filename, $data)) {
+		if (!file_exists($filename)) {
+			mkdir(pathinfo($filename, PATHINFO_DIRNAME), 0770);
+			if (!file_put_contents($filename, $data)) {
                 throw new \Exception("Impossible to write file {$filename}", 1);
             }
         } else {
@@ -506,7 +542,7 @@ class Gitolite
     /**
      * Commits changes in configuration
      *
-     * @return void
+     * @return bool
      */
     public function commitConfig()
     {
@@ -556,16 +592,16 @@ class Gitolite
      */
     public function writeUsers()
     {
-    	// delete old keys
-    	exec('rm ' . $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_KEY_DIR . '*.pub');
-    	
-        foreach ($this->getUsers() as $user) {
-            $this->writeFile(
-                $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR .
-                self::GITOLITE_KEY_DIR .
-                $user->renderKeyFileName(),
-                $user->getFirstKey()
-            );
+		foreach ($this->getUsers() as $user) {
+			// delete old keys
+			$path = $this->getGitLocalRepositoryPath() . '/' . self::GITOLITE_KEY_DIR . '*';
+			$cmd = sprintf("rm -Rf `find %s -name %s`", $path, $user->renderKeyFileName());
+			echo $cmd .   "\n";
+			//exec($cmd);
+			foreach ($user->getKeys() as $i => $key) {
+				$path = $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . $user->getKeyPool($i) . DIRECTORY_SEPARATOR . $user->renderKeyFileName();
+				$this->writeFile($path, $key);
+			}
         }
     }
 
@@ -660,6 +696,7 @@ class Gitolite
             $cmds = array($cmds);
         }
 
+		$output = '';
         foreach ($cmds as $cmd) {
             try {
                 $date = date('Y-m-d H:i:s');
@@ -667,9 +704,9 @@ class Gitolite
                 $this->log("$date COMMAND RUN: git $cmd");
                 $this->log("$date OUTPUT : . $output");
             } catch (\GitRuntimeException $e) {
-                $this->log_error("$date GIT ERROR: " . $e->getMessage());
+                $this->logError("$date GIT ERROR: " . $e->getMessage());
             } catch (\Exception $e) {
-                $this->log_error("$date ERROR: " . $e->getMessage());
+                $this->logError("$date ERROR: " . $e->getMessage());
             }
         }
         
@@ -695,7 +732,7 @@ class Gitolite
      *
      * @return void
      */
-    protected function log_error($message)
+    protected function logError($message)
     {
         $this->log['error'][] = $message;
     }

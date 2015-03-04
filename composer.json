@@ -1,5 +1,5 @@
 {
-    "name": "popovsergiy/gitolite-php",
+    "name": "rafaelgou/gitolite-php",
     "type": "library",
     "description": "Classes to admin Gitolite from PHP",
     "license": "LGPL-2.0",

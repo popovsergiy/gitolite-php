@@ -461,7 +461,7 @@ class Gitolite
 	 * @return
 	 */
 	protected function getUserKeys($u) {
-		$pattern = "/{$u}.*\.pub$/i";
+		$pattern = "/{$u}\.pub$/i";
 		$directory = new \RecursiveDirectoryIterator($this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . self::GITOLITE_KEY_DIR, \RecursiveDirectoryIterator::SKIP_DOTS);
 		$iterator = new \RecursiveIteratorIterator($directory, \RecursiveIteratorIterator::SELF_FIRST, \RecursiveIteratorIterator::CATCH_GET_CHILD); // Ignore "Permission denied"
 		$keys = new \RegexIterator($iterator, $pattern, \RecursiveRegexIterator::GET_MATCH);
@@ -510,7 +510,7 @@ class Gitolite
     protected function writeFile($filename, $data, $checkChange=true)
     {
 		if (!file_exists($filename)) {
-			mkdir(pathinfo($filename, PATHINFO_DIRNAME), 0770);
+			mkdir(pathinfo($filename, PATHINFO_DIRNAME), 0775);
 			if (!file_put_contents($filename, $data)) {
                 throw new \Exception("Impossible to write file {$filename}", 1);
             }
@@ -593,11 +593,6 @@ class Gitolite
     public function writeUsers()
     {
 		foreach ($this->getUsers() as $user) {
-			// delete old keys
-			$path = $this->getGitLocalRepositoryPath() . '/' . self::GITOLITE_KEY_DIR . '*';
-			$cmd = sprintf("rm -Rf `find %s -name %s`", $path, $user->renderKeyFileName());
-			echo $cmd .   "\n";
-			//exec($cmd);
 			foreach ($user->getKeys() as $i => $key) {
 				$path = $this->getGitLocalRepositoryPath() . DIRECTORY_SEPARATOR . $user->getKeyPool($i) . DIRECTORY_SEPARATOR . $user->renderKeyFileName();
 				$this->writeFile($path, $key);
